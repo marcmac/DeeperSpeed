@@ -92,8 +92,9 @@ RUN mv /usr/local/mpi/bin/mpirun /usr/local/mpi/bin/mpirun.real && \
 ##############################################################################
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHON_VERSION=3
-RUN apt-get install -y python3 python3-dev && \
+RUN apt-get install -y python3.7 python3.7-dev && \
         rm -f /usr/bin/python && \
+        ln -s /usr/bin/python3.7 /usr/bin/python3 && \
         ln -s /usr/bin/python3 /usr/bin/python && \
         curl -O https://bootstrap.pypa.io/get-pip.py && \
         python get-pip.py && \
