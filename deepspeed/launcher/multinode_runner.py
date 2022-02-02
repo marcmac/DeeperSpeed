@@ -56,7 +56,7 @@ class PDSHRunner(MultiNodeRunner):
 
         exports = ""
         for key, val in self.exports.items():
-            exports += "export {}={}; ".format(key, val)
+            exports += f"export {key}={quote(val)}; "
 
         deepspeed_launch = [
             exports,
@@ -71,7 +71,13 @@ class PDSHRunner(MultiNodeRunner):
             "--master_port={}".format(self.args.master_port)
         ]
         if self.args.detect_nvlink_pairs:
-            deepspeed_launch += ["--detect_nvlink_pairs"]
+            deepspeed_launch.append("--detect_nvlink_pairs")
+        if self.args.no_python:
+            deepspeed_launch.append("--no_python")
+        if self.args.module:
+            deepspeed_launch.append("--module")
+        if self.args.no_local_rank:
+            deepspeed_launch.append("--no_local_rank")
 
         return pdsh_cmd_args + deepspeed_launch + [self.user_script
                                                    ] + self.user_arguments
