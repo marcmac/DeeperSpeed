@@ -456,6 +456,12 @@ class FP16_Optimizer(object):
             model.load_state_dict(checkpoint['model'])
             optimizer.load_state_dict(checkpoint['optimizer'])
         """
+
+        if state_dict is None:
+            state_dict = self.state_dict()
+            self.refresh_fp32_params()
+            return
+
         # I think it should actually be ok to reload the optimizer before the model.
         self.dynamic_loss_scale = state_dict["dynamic_loss_scale"]
         self.cur_scale = state_dict["cur_scale"]
