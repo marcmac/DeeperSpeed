@@ -457,7 +457,7 @@ class FP16_Optimizer(object):
             optimizer.load_state_dict(checkpoint['optimizer'])
         """
 
-        if state_dict is None:
+        if state_dict is None or "dynamic_loss_scale" not in state_dict:
             state_dict = self.state_dict()
             self.refresh_fp32_params()
             return
@@ -492,7 +492,7 @@ class FP16_Optimizer(object):
                 self.fp32_groups_flat, state_dict["fp32_groups_flat"]
             ):
                 current.data.copy_(saved.data)
-        except RuntimeError as error:
+        except (RuntimeError, KeyError) as error:
             print(error)
             print(
                 "Error in loading fp32 model parameters!\nRefreshing fp32 model params from the model's fp16 params instead. This may incur some precision loss."
