@@ -167,7 +167,7 @@ with open(os.path.join(thisdir, 'README.md'), encoding='utf-8') as fin:
 
 start_time = time.time()
 
-setup(name='deepspeed-igor',
+setup(name='deepspeed',
       version=version_str,
       description='DeepSpeed library',
       long_description=readme_text,
