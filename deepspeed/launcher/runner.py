@@ -24,7 +24,7 @@ from ..constants import TORCH_DISTRIBUTED_DEFAULT_PORT
 from ..utils import logger
 
 DLTS_HOSTFILE = "/job/hostfile"
-EXPORT_ENVS = ["NCCL", "PYTHON", "MV2", 'UCX']
+EXPORT_ENVS = ["NCCL", "PYTHON", "MV2", "UCX"]
 DEEPSPEED_ENVIRONMENT_NAME = ".deepspeed_env"
 DEEPSPEED_ENVIRONMENT_PATHS = [os.path.expanduser("~"), '.']
 PDSH_MAX_FAN_OUT = 1024
@@ -104,6 +104,22 @@ def parse_args(args=None):
                         help="(optional) pass launcher specific arguments as a "
                         "single quoted argument.")
 
+    parser.add_argument("--module",
+                        action="store_true",
+                        help="Change each process to interpret the launch "
+                        "script as a Python module, executing with the same "
+                        "behavior as 'python -m'.")
+
+    parser.add_argument("--no_python",
+                        action="store_true",
+                        help="Skip prepending the training script with "
+                        "'python' - just execute it directly.")
+
+    parser.add_argument("--no_local_rank",
+                        action="store_true",
+                        help="Do not pass local_rank as an argument when calling "
+                        "the user's training script.")
+
     parser.add_argument("--force_multi",
                         action="store_true",
                         help="Force multi-node launcher mode, helps in cases where user "
@@ -154,11 +170,9 @@ def fetch_hostfile(hostfile_path):
 
 def parse_resource_filter(host_info, include_str="", exclude_str=""):
     '''Parse an inclusion or exclusion string and filter a hostfile dictionary.
-
     String format is NODE_SPEC[@NODE_SPEC ...], where
         NODE_SPEC = NAME[:SLOT[,SLOT ...]].
     If :SLOT is omitted, include/exclude all slots on that host.
-
     Examples:
         include_str="worker-0@worker-1:0,2" will use all slots on worker-0 and
           slots [0, 2] on worker-1.
@@ -326,7 +340,13 @@ def main(args=None):
             "--master_port={}".format(args.master_port)
         ]
         if args.detect_nvlink_pairs:
-            deepspeed_launch += ["--detect_nvlink_pairs"]
+            deepspeed_launch.append("--detect_nvlink_pairs")
+        if args.no_python:
+            deepspeed_launch.append("--no_python")
+        if args.module:
+            deepspeed_launch.append("--module")
+        if args.no_local_rank:
+            deepspeed_launch.append("--no_local_rank")
         cmd = deepspeed_launch + [args.user_script] + args.user_args
     else:
         args.launcher = args.launcher.lower()
@@ -358,7 +378,7 @@ def main(args=None):
             if os.path.isfile(environ_file):
                 with open(environ_file, 'r') as fd:
                     for var in fd.readlines():
-                        key, val = var.split('=')
+                        key, val = var.split('=', maxsplit=1)
                         runner.add_export(key, val)
 
         cmd = runner.get_cmd(env, active_resources)
