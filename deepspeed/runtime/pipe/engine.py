@@ -181,9 +181,9 @@ class PipelineEngine(DeepSpeedEngine):
 
         if self.is_last_stage():
             self.loss_model = self.module.loss_fn
-            
+
         self.has_attention_mask = self.module.__class__.__name__ == 'GPT2ModelPipe'
-        
+
         # Initialize pipeline communicators. Just send a 0.
         if is_even(self.stage_id):
             if not self.is_last_stage():
@@ -199,7 +199,7 @@ class PipelineEngine(DeepSpeedEngine):
     def set_has_attention_mask(self, value):
         assert isinstance(value, bool)
         self.has_attention_mask = value
-        
+
     def _build_data_iter(self, dataset):
         sampler = torch.utils.data.distributed.DistributedSampler(
             dataset,
@@ -545,7 +545,7 @@ class PipelineEngine(DeepSpeedEngine):
         # reset layers to hook to empty
         if layers_to_hook is not None:
             self.layers_to_hook = []
-            
+
         return logits, presents
 
     def is_first_stage(self):
@@ -660,6 +660,7 @@ class PipelineEngine(DeepSpeedEngine):
         else:
             inputs = self.pipe_buffers['inputs'][buffer_id].clone()
 
+        print(f"_exec_forward_pass: id:{buffer_id} ipp:{self.is_pipe_partitioned} fs:{self.is_first_stage()} ls: {self.is_last_stage()}")
         # collect the partitioned input from the previous stage
         if self.is_pipe_partitioned and not self.is_first_stage():
             part_input = PartitionedTensor.from_meta(
@@ -679,7 +680,8 @@ class PipelineEngine(DeepSpeedEngine):
         self._zero_grads(inputs)
 
         outputs = super().forward(inputs)
-        
+
+        print(f"_exec_forward_pass: in{inputs} out:{outputs}")
         # Partition the outputs if we are not the last stage
         if self.is_pipe_partitioned and not self.is_last_stage():
             part = PartitionedTensor(tensor=outputs[0],
@@ -713,6 +715,7 @@ class PipelineEngine(DeepSpeedEngine):
                     self.total_loss = [torch.zeros_like(l) for l in self.loss]
                 for idx, l in enumerate(self.loss):
                     self.total_loss[idx] += l.detach()
+            print(f"_exec_forward_pass: lm:{self.loss_model} loss:{self.loss} tl:{self.total_loss}")
 
     def _exec_backward_pass(self, buffer_id):
         assert self.optimizer is not None, "must provide optimizer during " \
