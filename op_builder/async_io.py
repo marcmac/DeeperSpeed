@@ -30,7 +30,7 @@ class AsyncIOBuilder(OpBuilder):
         return ['csrc/aio/py_lib', 'csrc/aio/common']
 
     def cxx_args(self):
-        return [
+        args = [
             '-g',
             '-Wall',
             '-O0',
@@ -41,8 +41,11 @@ class AsyncIOBuilder(OpBuilder):
             '-march=native',
             '-fopenmp',
             '-laio',
-            self.simd_width()
         ]
+        sw = self.simd_width()
+        if sw:
+            args += [sw]
+        return args
 
     def extra_ldflags(self):
         return ['-laio']
